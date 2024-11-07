@@ -1,0 +1,39 @@
+{% load static %}
+
+
+<!-- home.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Cây Cảnh - Garden21</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header>
+        <h1>Chào mừng đến với Blog Cây Cảnh Garden21</h1>
+        <p>Nơi chia sẻ những kinh nghiệm và sản phẩm cây cảnh đẹp.</p>
+    </header>
+
+    <section>
+        <h2>Giới thiệu doanh nghiệp</h2>
+        <p><strong>Garden21</strong> chuyên cung cấp các sản phẩm cây cảnh và dịch vụ làm vườn. Địa chỉ cửa hàng chính tại <em>144 Hàm Nghi, Phường Thạc Gián, Quận Thanh Khê, TP Đà Nẵng</em>.</p>
+    </section>
+
+    <section>
+        <h2>Sản phẩm nổi bật</h2>
+        <ul>
+            <li><strong>Chậu treo nhựa móc kém</strong> - Đường kính: 25cm, móc treo dài: 50cm</li>
+            <li><strong>Cây nga mi</strong> - cây trồng vườn</li>
+            <li><strong>Cây không khí</strong> - terrarium</li>
+            <li><strong>Sen đá Kim cương</strong></li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Xem danh sách các đơn hàng đã bán</h2>
+        <p>Để xem danh sách các hóa đơn đã bán, vui lòng truy cập <a href="{% url 'invoice_list' %}">danh sách hóa đơn</a>.</p>
+    </section>
+</body>
+</html>

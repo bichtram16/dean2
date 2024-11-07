@@ -13,6 +13,13 @@ from io import TextIOWrapper
 from .forms import CSVUploadForm, InvoiceUpdateForm, InvoiceCreateForm, InvoiceForm, InvoiceDetailForm
 from .models import Invoice, Store, CustomerGroup, Customer, ProductCategory, Product, InvoiceDetail
 
+
+
+# Trang chủ blog cây cảnh
+def home(request):
+    return render(request, 'myapp/home.html')
+
+
 def invoice_list(request):
     if request.method == 'POST':
         form = CSVUploadForm(request.POST, request.FILES)
