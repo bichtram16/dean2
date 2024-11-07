@@ -60,6 +60,11 @@
             position: static; /* Đặt lại vị trí để input có thể lấy tiêu điểm */
         }
 
+        .total-price {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
         button {
             width: 100%;
             padding: 10px;
@@ -73,6 +78,12 @@
         button:hover {
             background-color: #218838;
         }
+
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
     </style>
     <script>
         function toggleQuantityInput(checkbox) {
@@ -85,12 +96,42 @@
                 quantityInput.value = ''; // Reset giá trị của input số lượng
                 quantityInput.style.position = 'absolute'; // Đặt lại vị trí để không chiếm không gian
             }
+            calculateTotalPrice(); // Tính lại tổng giá
+        }
+
+        function filterProducts() {
+            const searchInput = document.getElementById('productSearch').value.toLowerCase();
+            const products = document.querySelectorAll('.product-item');
+
+            products.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                if (label.includes(searchInput)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function calculateTotalPrice() {
+            const checkboxes = document.querySelectorAll('input[name="product_ids"]:checked');
+            let total = 0;
+
+            checkboxes.forEach((checkbox) => {
+                const quantityInput = checkbox.nextElementSibling.nextElementSibling;
+                const quantity = quantityInput.style.visibility === 'visible' && quantityInput.value.trim() !== '' ? parseInt(quantityInput.value) : 0;
+                const price = parseFloat(checkbox.dataset.price); // Lấy giá từ thuộc tính dữ liệu
+                total += quantity * price; // Cộng tổng giá
+            });
+
+            document.getElementById('totalPrice').textContent = 'Tổng giá: ' + total.toLocaleString() + ' VNĐ'; // Hiển thị tổng giá
+            return(total)
         }
 
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('invoiceForm').addEventListener('submit', function (event) {
                 event.preventDefault(); // Ngăn chặn hành động submit mặc định
-                isValid = true
+                let isValid = true; // Đặt biến kiểm tra tính hợp lệ
                 // Lấy giá trị từ các trường
                 const maCuaHang = document.querySelector('[name="ma_cua_hang"]').value;
                 const maKh = document.querySelector('[name="ma_kh"]').value;
@@ -108,12 +149,12 @@
                     if (quantityInput.style.visibility === 'visible' && quantityInput.value.trim() !== '') {
                         quantities.push(quantityInput.value);
                     } else {
-                        isValid = false
+                        isValid = false; // Đặt biến không hợp lệ
                     }
                 });
 
                 // Kiểm tra tính hợp lệ trước khi gửi
-                if (productIds.length == 0 || !isValid) {
+                if (productIds.length === 0 || !isValid) {
                     alert('Vui lòng chọn ít nhất một sản phẩm và nhập số lượng.');
                     return;
                 }
@@ -126,6 +167,7 @@
                     thang: thang,
                     product_ids: productIds,
                     quantities: quantities,
+                    tam_tinh: calculateTotalPrice(),
                 };
 
                 const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -133,22 +175,20 @@
                 fetch('/create-invoice1/', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json', // Đặt content type là JSON
-                        'X-CSRFToken': csrfToken, // Thêm CSRF token vào header
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
                     },
-                    body: JSON.stringify(data), // Chuyển đổi đối tượng thành chuỗi JSON
+                    body: JSON.stringify(data),
                 })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json(); // Chuyển đổi phản hồi thành JSON
-                    }
-                    throw new Error('Error in submitting form');
-                })
+                .then(response => response.json())
                 .then(data => {
-                    if (data.redirect_url) {
-                        window.location.href = data.redirect_url; // Redirect đến trang thành công
+                    console.log(data); // In ra phản hồi để kiểm tra
+                    if (data.success) {
+                        alert('Đã tạo mới Invoice thành công!');
+                        // Reset form hoặc điều chỉnh khác nếu cần thiết
+                        window.location.href = '/invoices/';
                     } else {
-                        alert(data.message);
+                        alert('Lỗi khi tạo Invoice mới.');
                     }
                 })
                 .catch(error => {
@@ -179,18 +219,23 @@
             {% endfor %}
         </select>
 
+        <label for="productSearch">Tìm kiếm sản phẩm:</label>
+        <input type="text" id="productSearch" class="search-input" onkeyup="filterProducts()" placeholder="Nhập tên sản phẩm...">
+
         <h3>Chọn sản phẩm:</h3>
         <div class="product-list">
             {% for product in products %}
             <div class="product-item">
-                <input type="checkbox" name="product_ids" value="{{ product.ma_hang }}"
+                <input type="checkbox" name="product_ids" value="{{ product.ma_hang }}" data-price="{{ product.don_gia }}"
                     onclick="toggleQuantityInput(this)">
-                <label>{{ product.mat_hang }}</label>
-                <input type="number" name="quantities" placeholder="Số lượng" required>
+                <label>{{ product.mat_hang }} ({{ product.don_gia }} VNĐ)</label>
+                <input type="number" name="quantities" placeholder="Số lượng" required oninput="calculateTotalPrice()">
             </div>
             {% endfor %}
         </div>
 
+        <div class="total-price" id="totalPrice">Tổng giá: 0 VNĐ</div>
+        
         <button type="submit">Tạo Invoice</button>
     </form>
 </body>

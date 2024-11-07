@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Store(models.Model):
     ma_cua_hang = models.CharField(max_length=50, primary_key=True)
     doanh_nghiep = models.CharField(max_length=255, blank=True, null=True)

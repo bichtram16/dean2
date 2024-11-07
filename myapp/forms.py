@@ -30,3 +30,7 @@ class InvoiceDetailForm(forms.Form):
         label="Chọn sản phẩm"
     )
     quantities = forms.CharField(label="Số lượng (vd: 1,2,3)", required=True)
+    
+    
+class UploadFileForm(forms.Form):
+    file = forms.FileField()
