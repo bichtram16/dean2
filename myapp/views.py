@@ -12,6 +12,8 @@ import json
 from io import TextIOWrapper
 from .forms import CSVUploadForm, InvoiceUpdateForm, InvoiceCreateForm, InvoiceForm, InvoiceDetailForm
 from .models import Invoice, Store, CustomerGroup, Customer, ProductCategory, Product, InvoiceDetail
+import json
+from decimal import Decimal
 
 
 
@@ -108,6 +110,8 @@ def invoice_list(request):
     paginator = Paginator(invoices, 10)  # Số lượng hóa đơn mỗi trang
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    for p in page_obj:
+        print(p.pk)
 
     return render(request, 'myapp/invoice_list.html', {
         'form': form,
@@ -456,29 +460,36 @@ from django.core.paginator import Paginator
 from django.shortcuts import render
 from .models import Invoice, InvoiceDetail, CustomerGroup, Product
 from django.db.models import Sum
+from django.db.models import Count
 
 def chart_view(request):
     # Tổng số lượng sản phẩm bán được theo mã hàng
     product_sales = InvoiceDetail.objects.values('ma_hang__mat_hang').annotate(total_sales=Sum('sl_ban'))
     product_labels = [item['ma_hang__mat_hang'] for item in product_sales]
-    product_sales_data = [item['total_sales'] for item in product_sales]
+    product_sales_data = [float(item['total_sales']) if isinstance(item['total_sales'], Decimal) else item['total_sales'] for item in product_sales]
 
-    # Phân bố nhóm khách hàng
-    customer_groups = CustomerGroup.objects.values('thong_tin_nhom_kh').annotate(count=Sum('customer__ma_kh'))
-    customer_group_labels = [item['thong_tin_nhom_kh'] for item in customer_groups]
-    customer_group_data = [item['count'] for item in customer_groups]
+    # Phân bố nhóm khách hàng, đếm số lượng khách hàng trong mỗi nhóm
+    customer_groups = CustomerGroup.objects.annotate(count=Count('customer__ma_kh'))
+    print(customer_groups)
+    
+    # Lấy nhãn nhóm khách hàng và số lượng khách hàng
+    customer_group_labels = [item.thong_tin_nhom_kh for item in customer_groups]
+    customer_group_data = [item.count for item in customer_groups]
 
     # Doanh thu theo tháng trong năm 2020
     monthly_revenue = InvoiceDetail.objects.filter(invoice__nam=2020).values('invoice__thang').annotate(revenue=Sum('tam_tinh'))
+    print(monthly_revenue)
     monthly_revenue_labels = [f"Tháng {item['invoice__thang']}" for item in monthly_revenue]
-    monthly_revenue_data = [item['revenue'] for item in monthly_revenue]
+    monthly_revenue_data = [float(item['revenue']) if isinstance(item['revenue'], Decimal) else item['revenue'] for item in monthly_revenue]
 
+    # Chuyển context thành JSON
     context = {
-        'product_labels': product_labels,
-        'product_sales_data': product_sales_data,
-        'customer_group_labels': customer_group_labels,
-        'customer_group_data': customer_group_data,
-        'monthly_revenue_labels': monthly_revenue_labels,
-        'monthly_revenue_data': monthly_revenue_data,
+        'product_labels': json.dumps(product_labels),
+        'product_sales_data': json.dumps(product_sales_data),
+        'customer_group_labels': json.dumps(customer_group_labels),
+        'customer_group_data': json.dumps(customer_group_data),
+        'monthly_revenue_labels': json.dumps(monthly_revenue_labels),
+        'monthly_revenue_data': json.dumps(monthly_revenue_data),
     }
+
     return render(request, 'myapp/chart.html', context)

@@ -88,14 +88,14 @@
             <div>
                 <span>
                     {% if page_obj.has_previous %}
-                        <a href="?page=1" class="btn btn-outline-secondary">&laquo; First</a>
-                        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary">Previous</a>
+                        <a href="?page=1" class="btn btn-outline-secondary">&laquo; Đầu</a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary">Trước</a>
                     {% endif %}
                 </span>
                 <span>
                     {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary">Next</a>
-                        <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-outline-secondary">Last &raquo;</a>
+                        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary">Tiếp</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-outline-secondary">Cuối &raquo;</a>
                     {% endif %}
                 </span>
             </div>

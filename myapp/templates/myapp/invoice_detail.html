@@ -128,24 +128,24 @@
 </head>
 
 <body>
-    <h1>Invoice Detail</h1>
+    <h1>Chi tiết đơn hàng</h1>
 
     <div class="container">
         <div class="invoice-info">
-            <h2>Invoice Information</h2>
-            <p><strong>Invoice Code:</strong> {{ invoice.ma_hoa_don }}</p>
-            <p><strong>Store:</strong> {{ invoice.ma_cua_hang.doanh_nghiep }}</p>
-            <p><strong>Customer:</strong> {{ invoice.ma_kh }} - {{invoice.ma_kh.ma_nhom_kh.thong_tin_nhom_kh}}</p>
-            <p><strong>Date:</strong> {{ invoice.thang }}/{{ invoice.nam }}</p>
-            <p class="total">Total Price: {{ total_price }} VND</p>
+            <h2>Thông tin đơn hàng</h2>
+            <p><strong>Mã đơn hàng:</strong> {{ invoice.ma_hoa_don }}</p>
+            <p><strong>Cửa hàng:</strong> {{ invoice.ma_cua_hang.doanh_nghiep }}</p>
+            <p><strong>Khách hàng:</strong> {{ invoice.ma_kh }} - {{invoice.ma_kh.ma_nhom_kh.thong_tin_nhom_kh}}</p>
+            <p><strong>Ngày:</strong> {{ invoice.thang }}/{{ invoice.nam }}</p>
+            <p class="total">Tổng hóa đơn: {{ total_price }} VND</p>
         </div>
 
         <div class="form-section">
-            <h2>Update Invoice Information</h2>
+            <h2>Cập nhật thông tin đơn hàng</h2>
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit">Update Invoice</button>
+                <button type="submit">Cập nhật</button>
             </form>
         </div>
     </div>
@@ -154,11 +154,11 @@
     <table>
         <thead>
             <tr>
-                <th>Product Code</th>
-                <th>Product Name</th>
-                <th>Quantity Sold</th>
-                <th>Subtotal</th>
-                <th>Actions</th>
+                <th>Mã Nhóm Hàng</th>
+                <th>Mặt Hàng</th>
+                <th>Số lượng bán</th>
+                <th>tổng</th>
+                <th>Xóa</th>
             </tr>
         </thead>
         <tbody>
@@ -186,13 +186,13 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5">No details available for this invoice.</td>
+                <td colspan="5">Không có thông tin chi tiết cho đơn hàng này</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <a href="{% url 'invoice_list' %}" class="back-link">Back to Invoice List</a>
+    <a href="{% url 'invoice_list' %}" class="back-link">Trở về</a>
 </body>
 
 </html>
