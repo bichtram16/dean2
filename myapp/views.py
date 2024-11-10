@@ -463,33 +463,55 @@ from django.db.models import Sum
 from django.db.models import Count
 
 def chart_view(request):
-    # Tổng số lượng sản phẩm bán được theo mã hàng
-    product_sales = InvoiceDetail.objects.values('ma_hang__mat_hang').annotate(total_sales=Sum('sl_ban'))
-    product_labels = [item['ma_hang__mat_hang'] for item in product_sales]
-    product_sales_data = [float(item['total_sales']) if isinstance(item['total_sales'], Decimal) else item['total_sales'] for item in product_sales]
-
-    # Phân bố nhóm khách hàng, đếm số lượng khách hàng trong mỗi nhóm
-    customer_groups = CustomerGroup.objects.annotate(count=Count('customer__ma_kh'))
-    print(customer_groups)
-    
-    # Lấy nhãn nhóm khách hàng và số lượng khách hàng
-    customer_group_labels = [item.thong_tin_nhom_kh for item in customer_groups]
-    customer_group_data = [item.count for item in customer_groups]
 
     # Doanh thu theo tháng trong năm 2020
     monthly_revenue = InvoiceDetail.objects.filter(invoice__nam=2020).values('invoice__thang').annotate(revenue=Sum('tam_tinh'))
-    print(monthly_revenue)
     monthly_revenue_labels = [f"Tháng {item['invoice__thang']}" for item in monthly_revenue]
     monthly_revenue_data = [float(item['revenue']) if isinstance(item['revenue'], Decimal) else item['revenue'] for item in monthly_revenue]
+    
+    
+    
+        # Tính tổng tạm tính theo mã cửa hàng
+    store_sales = InvoiceDetail.objects.values('invoice__ma_cua_hang__ma_cua_hang').annotate(total_sales=Sum('tam_tinh'))
+    
+    store_sales_labels = [item['invoice__ma_cua_hang__ma_cua_hang'] for item in store_sales]
+    store_sales_data = [float(item['total_sales']) if isinstance(item['total_sales'], Decimal) else item['total_sales'] for item in store_sales]
+    
+    
+        # Đếm số lượng khách hàng theo nhóm khách hàng
+    customer_groups = Customer.objects.values('ma_nhom_kh__thong_tin_nhom_kh').annotate(count=Count('ma_kh'))
+    customer_group_labels = [group['ma_nhom_kh__thong_tin_nhom_kh'] for group in customer_groups]
+    customer_group_data = [group['count'] for group in customer_groups]
+    
+    
+    
 
+
+    # Truy vấn tổng số lượng bán (sl_ban) theo mã nhóm hàng (ma_nhom_hang)
+    product_sales = (
+        InvoiceDetail.objects
+        .values('ma_hang__ma_nhom_hang__ma_nhom_hang')  # Truy vấn mã nhóm hàng (ma_nhom_hang) từ ProductCategory
+        .annotate(total_sales=Sum('sl_ban'))  # Tính tổng số lượng bán
+        .order_by('-total_sales')  # Sắp xếp theo tổng số lượng bán giảm dần
+    )
+
+    # Lấy dữ liệu để sử dụng cho vẽ biểu đồ hoặc xử lý tiếp theo
+    product_group_labels = [item['ma_hang__ma_nhom_hang__ma_nhom_hang'] for item in product_sales]  # Mã nhóm hàng
+    product_group_data = [item['total_sales'] for item in product_sales]  # Tổng số lượng bán
+    print(product_group_data)
+
+        
+        
     # Chuyển context thành JSON
     context = {
-        'product_labels': json.dumps(product_labels),
-        'product_sales_data': json.dumps(product_sales_data),
-        'customer_group_labels': json.dumps(customer_group_labels),
-        'customer_group_data': json.dumps(customer_group_data),
         'monthly_revenue_labels': json.dumps(monthly_revenue_labels),
         'monthly_revenue_data': json.dumps(monthly_revenue_data),
+        'store_sales_labels': json.dumps(store_sales_labels),
+        'store_sales_data': json.dumps(store_sales_data),
+        'customer_group_labels': json.dumps(customer_group_labels),
+        'customer_group_data': json.dumps(customer_group_data),
+        'product_group_labels': product_group_labels,
+        'product_group_data': product_group_data,
     }
 
     return render(request, 'myapp/chart.html', context)

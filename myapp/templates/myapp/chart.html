@@ -180,70 +180,96 @@
             }
         });
 
-        // Khởi tạo biểu đồ nhóm khách hàng
+        // Khởi tạo biểu đồ tổng tạm tính theo cửa hàng
+        const storeSalesCtx = document.getElementById('storeSalesCanvas').getContext('2d');
+        const storeSalesChart = new Chart(storeSalesCtx, {
+            type: 'bar',
+            data: {
+                labels: JSON.parse('{{ store_sales_labels|escapejs }}'),
+                datasets: [{
+                    label: 'Tổng tạm tính (VNĐ)',
+                    data: JSON.parse('{{ store_sales_data|escapejs }}'),
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+            // Khởi tạo biểu đồ tròn nhóm khách hàng
+            const customerGroupCtx = document.getElementById('customerGroupCanvas').getContext('2d');
+            const customerGroupChart = new Chart(customerGroupCtx, {
+                type: 'pie',
+                data: {
+                    labels: JSON.parse('{{ customer_group_labels|escapejs }}'),
+                    datasets: [{
+                        data: JSON.parse('{{ customer_group_data|escapejs }}'),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,  // Để biểu đồ thu nhỏ theo kích thước của canvas
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.raw;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = ((value / total) * 100).toFixed(2) + '%';
+                                    return label + ': ' + percentage;
+                                }
+                            }
+                        }
+                    }
+                }
+            });                
+    if (typeof customerGroupChart === 'undefined') {
         const customerGroupCtx = document.getElementById('customerGroupCanvas').getContext('2d');
         const customerGroupChart = new Chart(customerGroupCtx, {
             type: 'pie',
             data: {
                 labels: JSON.parse('{{ customer_group_labels|escapejs }}'),
                 datasets: [{
-                    label: 'Nhóm Khách Hàng',
+                    label: 'Số lượng khách hàng',
                     data: JSON.parse('{{ customer_group_data|escapejs }}'),
-                    backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)'],
-                    borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            generateLabels: (chart) => {
-                                const data = chart.data.datasets[0].data;
-                                const labels = chart.data.labels;
-                                return labels.map((label, index) => ({
-                                    text: `${label} - ${((data[index] / data.reduce((a, b) => a + b)) * 100).toFixed(1)}%`,
-                                    fillStyle: chart.data.datasets[0].backgroundColor[index]
-                                }));
-                            }
-                        }
-                    }
-                }
             }
         });
-
-        // Khởi tạo biểu đồ tổng tạm tính theo mã cửa hàng
-        const storeSalesCtx = document.getElementById('storeSalesCanvas').getContext('2d');
-        const storeSalesChart = new Chart(storeSalesCtx, {
-            type: 'bar',
-            data: {
-                labels: JSON.parse('{{ store_codes|escapejs }}'),
-                datasets: [{
-                    label: 'Tổng Tạm Tính',
-                    data: JSON.parse('{{ store_sales_data|escapejs }}'),
-                    backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ${context.raw} VNĐ (${context.dataset.label}) - Địa chỉ: ${context.chart.data.labels[context.dataIndex]}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
+    } else {
+        // Nếu biến đã tồn tại, bạn có thể cập nhật dữ liệu nếu cần
+        customerGroupChart.data.labels = JSON.parse('{{ customer_group_labels|escapejs }}');
+        customerGroupChart.data.datasets[0].data = JSON.parse('{{ customer_group_data|escapejs }}');
+        customerGroupChart.update();
+    }
     </script>
 </body>
 </html>
