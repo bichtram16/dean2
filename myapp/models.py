@@ -24,7 +24,14 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.ma_kh
-
+class Invoice(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    invoice_number = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    api_code = models.CharField(max_length=100, unique=True) 
+    def __str__(self):
+        return f"Invoice {self.invoice_number} - {self.customer} - {self.store}"
 
 class ProductCategory(models.Model):
     ma_nhom_hang = models.CharField(max_length=50, primary_key=True)
@@ -51,6 +58,8 @@ class Invoice(models.Model):
     ma_kh = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
     nam = models.IntegerField(blank=True, null=True)
     thang = models.IntegerField(blank=True, null=True)
+    api_code = models.CharField(max_length=255, blank=True, null=True) 
+    
 
     def __str__(self):
         return self.ma_hoa_don

@@ -57,8 +57,8 @@ ROOT_URLCONF = 'dean2.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],
-        'APP_DIRS': True,
+        'DIRS': [BASE_DIR / "templates"],  # Tìm template trong thư mục templates của dự án
+        'APP_DIRS': True,  # Tìm template trong thư mục templates của mỗi ứng dụng
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -69,6 +69,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'dean2.wsgi.application'
 
@@ -106,8 +107,10 @@ WSGI_APPLICATION = 'dean2.wsgi.application'
 STATIC_URL = '/static/'
 
 # Nếu bạn có thư mục static riêng trong ứng dụng
+# settings.py
+
 STATICFILES_DIRS = [
-    BASE_DIR / 'myapp/static',
+    BASE_DIR / "myapp" / "static",  # Đảm bảo rằng thư mục myapp/static tồn tại
 ]
 
 # Database
@@ -118,7 +121,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dean2',
         'USER': 'root',
-        'PASSWORD': 'doanhuyvu0207',
+        'PASSWORD': '123456789',
         'HOST': 'localhost',  # Adjust if using a different host
         'PORT': '3306',
     }
@@ -165,3 +168,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

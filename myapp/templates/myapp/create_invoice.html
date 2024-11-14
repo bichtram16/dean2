@@ -84,6 +84,32 @@
             padding: 10px;
             margin-bottom: 15px;
         }
+        fetch('/api/create-order/', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+    },
+    body: JSON.stringify({
+        ma_kh: "KH12345",  // Mã khách hàng có thể là cũ hoặc mới
+        product: "Product 1",
+        quantity: 2,
+        order_date: "2024-11-13",
+        name: "Customer Name"
+    })
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        alert(`Đơn hàng tạo thành công! Mã khách hàng: ${data.customer_ma_kh}`);
+    } else {
+        alert('Lỗi: ' + data.message);
+    }
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+
     </style>
     <script>
         function toggleQuantityInput(checkbox) {

@@ -259,6 +259,20 @@ def create_invoice1(request):
     
 
 
+# views.py
+
+import json
+from datetime import datetime
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from .models import Invoice, Customer, Store, InvoiceDetail, Product
+import uuid
+
+def generate_api_code(customer):
+    # Sử dụng uuid4 để tạo mã API duy nhất
+    unique_code = str(uuid.uuid4())
+    return f"API-{customer.ma_kh}-{unique_code}"
+
 def create_invoice(request):
     if request.method == 'POST':
         # Lấy dữ liệu từ JSON
@@ -274,8 +288,27 @@ def create_invoice(request):
         store = get_object_or_404(Store, ma_cua_hang=ma_cua_hang)
         customer = get_object_or_404(Customer, ma_kh=ma_kh)
 
-        # Tạo Invoice
-        invoice = Invoice(ma_cua_hang=store, ma_kh=customer, nam=nam, thang=thang)
+        # Kiểm tra nếu khách hàng đã có mã API
+        if customer.api_code:
+            # Nếu khách hàng đã có mã API, sử dụng mã API cũ
+            api_code = customer.api_code
+        else:
+            # Tạo mã API mới
+            api_code = generate_api_code(customer)
+
+            # Kiểm tra nếu mã API đã tồn tại trong khách hàng khác
+            existing_customer = Customer.objects.filter(api_code=api_code).exclude(pk=customer.pk).first()
+            if existing_customer:
+                # Sử dụng mã khách hàng của khách hàng trước đó
+                api_code = existing_customer.api_code
+                customer = existing_customer  # Thay đổi khách hàng thành khách hàng trước đó
+            else:
+                # Nếu không trùng, lưu mã API cho khách hàng hiện tại
+                customer.api_code = api_code
+                customer.save()
+
+        # Tạo Invoice và lưu api_code vào Invoice
+        invoice = Invoice(ma_cua_hang=store, ma_kh=customer, nam=nam, thang=thang, api_code=api_code)
         invoice.save()
 
         # Tạo danh sách InvoiceDetail
@@ -290,7 +323,12 @@ def create_invoice(request):
             InvoiceDetail.objects.bulk_create(invoice_details)
 
         # Trả về phản hồi JSON
-        return JsonResponse({'message': 'Invoice created successfully!', 'redirect_url': 'invoice_success'})
+        return JsonResponse({
+            'message': 'Invoice created successfully!',
+            'redirect_url': 'invoice_success',
+            'api_code': api_code,
+            'customer_ma_kh': customer.ma_kh  # Trả về mã khách hàng
+        })
 
     # Nếu không phải POST, trả về form như trước
     products = Product.objects.all()
@@ -303,6 +341,7 @@ def create_invoice(request):
         'stores': stores,
     }
     return render(request, 'myapp/create_invoice.html', context)
+
 
 
 
@@ -415,15 +454,16 @@ def save_data_to_db(data_rows):
 
 
 
-
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from django.http import JsonResponse
 from django.shortcuts import render
-from .models import Invoice, InvoiceDetail, Store, Product, CustomerGroup, ProductCategory
-from django.core.paginator import Paginator
+from .models import Invoice, InvoiceDetail
 
 def export_invoice_data(request):
     # Truy vấn tất cả các hóa đơn và chi tiết hóa đơn
     invoices = Invoice.objects.all()
-    
+
     # Paginate kết quả nếu cần
     paginator = Paginator(invoices, 10)  # Hiển thị 10 hóa đơn mỗi trang
     page_number = request.GET.get('page')
@@ -452,6 +492,84 @@ def export_invoice_data(request):
         'page_obj': page_obj,
         'invoice_data': invoice_data
     })
+
+
+from django.shortcuts import render
+from django.contrib import messages
+from .forms_export_to_google_sheets import GoogleSheetURLForm
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from .models import Invoice, InvoiceDetail
+from decimal import Decimal
+
+def export_to_google_sheets(request):
+    data_exported = False  # Biến theo dõi trạng thái xuất dữ liệu
+    sheet_url = None       # Biến lưu URL của Google Sheet sau khi xuất thành công
+
+    if request.method == "POST":
+        form = GoogleSheetURLForm(request.POST)
+        if form.is_valid():
+            sheet_url = form.cleaned_data["sheet_url"]
+
+            try:
+                # Xác thực Google Sheets API
+                creds_json_path = "E:/KY 1 NAM 4/DEAN/baocao/ecstatic-effort-441619-b9-fd4f94db9224.json"
+                scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+                creds = ServiceAccountCredentials.from_json_keyfile_name(creds_json_path, scope)
+                client = gspread.authorize(creds)
+
+                # Mở Google Sheet từ URL người dùng nhập
+                sheet = client.open_by_url(sheet_url).sheet1
+
+                # Lấy dữ liệu từ các hóa đơn
+                invoices = Invoice.objects.all()
+                data = [['Mã Cửa Hàng', 'Năm', 'Tháng', 'Mã Hóa Đơn', 'Thông Tin Nhóm Khách Hàng', 'Nhóm Hàng', 'Mặt Hàng', 'Đơn Vị Tính', 'Số Lượng Bán', 'Đơn Giá', 'Tạm Tính']]
+
+                for invoice in invoices:
+                    invoice_details = InvoiceDetail.objects.filter(invoice=invoice)
+                    for detail in invoice_details:
+                        don_gia = float(detail.ma_hang.don_gia) if detail.ma_hang and isinstance(detail.ma_hang.don_gia, Decimal) else detail.ma_hang.don_gia
+                        tam_tinh = float(detail.tam_tinh) if isinstance(detail.tam_tinh, Decimal) else detail.tam_tinh
+
+                        row = [
+                            invoice.ma_cua_hang.ma_cua_hang,
+                            invoice.nam,
+                            invoice.thang,
+                            invoice.ma_hoa_don,
+                            invoice.ma_kh.ma_nhom_kh.thong_tin_nhom_kh if invoice.ma_kh else '',
+                            detail.ma_hang.ma_nhom_hang.nhom_hang if detail.ma_hang else '',
+                            detail.ma_hang.mat_hang if detail.ma_hang else '',
+                            detail.ma_hang.dvt if detail.ma_hang else '',
+                            detail.sl_ban,
+                            don_gia,
+                            tam_tinh,
+                        ]
+                        data.append(row)
+
+                # Ghi dữ liệu lên Google Sheets
+                sheet.clear()
+                sheet.update(data)
+
+                # Đánh dấu dữ liệu đã xuất thành công và URL Google Sheet
+                data_exported = True
+                messages.success(request, "Dữ liệu đã được xuất lên Google Sheets thành công!")
+
+            except Exception as e:
+                messages.error(request, f"Có lỗi xảy ra: {str(e)}")
+
+    else:
+        form = GoogleSheetURLForm()
+
+    return render(request, 'myapp/export_to_google_sheets.html', {
+        'form': form,
+        'data_exported': data_exported,   # Trạng thái đã xuất dữ liệu
+        'sheet_url': sheet_url,           # Truyền URL Google Sheet
+    })
+
+
+
+
+
 
 
 from django.shortcuts import render
@@ -515,3 +633,28 @@ def chart_view(request):
     }
 
     return render(request, 'myapp/chart.html', context)
+
+# call API
+import requests
+from django.http import JsonResponse
+
+def get_ip_address(request):
+    ip_url = 'https://api64.ipify.org?format=json'
+    ip_response = requests.get(ip_url)
+    ip_data = ip_response.json()
+    ip_address = ip_data.get("ip")
+
+    geo_url = f'https://ipinfo.io/{ip_address}/json'
+    geo_response = requests.get(geo_url)
+    geo_data = geo_response.json()
+
+    response_data = {
+        "ip": ip_address,  # Địa chỉ IP
+        "city": geo_data.get("city", "Không có thông tin thành phố"),  # Thành phố
+        "region": geo_data.get("region", "Không có thông tin vùng"),  # Vùng
+        "country": geo_data.get("country", "Không có thông tin quốc gia"),  # Quốc gia
+        "latitude": geo_data.get("loc", "").split(",")[0] if geo_data.get("loc") else None,  # Vĩ độ
+        "longitude": geo_data.get("loc", "").split(",")[1] if geo_data.get("loc") else None  # Kinh độ
+    }
+
+    return JsonResponse(response_data)

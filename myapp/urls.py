@@ -9,9 +9,14 @@ urlpatterns = [
     path('invoices/<str:pk>/', views.invoice_detail, name='invoice_detail'),
     path('invoice/delete_detail/<int:detail_id>/', delete_invoice_detail, name='delete_invoice_detail'),
     path('invoice/detail/update/<int:id>/', update_invoice_detail, name='update_invoice_detail'),
-    path('create-invoice/', create_invoice, name='create_invoice'),
+    path('create-invoice/', views.create_invoice, name='create_invoice'),
     path('create-invoice1/', create_invoice1, name='create_invoice1'),
     path('import_excel/', import_excel_view, name='import_excel'),
     path('export-invoice-data/', views.export_invoice_data, name='export_invoice_data'),
     path('chart/', views.chart_view, name='chart'),
+    path('get-ip/', views.get_ip_address, name='get_ip'
+         ),
+    path('export-to-google-sheets/', views.export_to_google_sheets, name='export_to_google_sheets')
 ]
+
+
